@@ -1,0 +1,39 @@
+#LDFLAGS= -static -Wl,--start-group -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -Wl,--end-group -liomp5 -lboost_serialization
+#g++ -O3 -m64 -fopenmp  -DNDEBUG -fPIC -std=c++0x   testmblas.cpp blasroutines.cpp -o testmblas.exe  -lblas -llapack -lpthread
+LDFLAGS=   -lpthread -lblas -ltblis
+#LDFLAGS=  -L /usr/lib/atlas-base/atlas   -lpthread -lblas
+
+CPP=g++
+CPPFLAGS= -O3 -m64 -fopenmp -DNDEBUG -fPIC -std=c++11
+
+#$(CPP) $(CPPFLAGS) $(INCLUDES) $(LINKS) -c $< -o $@ $(LDFLAGS)
+LINKS=-L/usr/lib/atlas-base/atlas/
+all:blasroutines.o 
+%.o: %.cpp 
+	@echo 'Building $<'
+	$(CPP) $(CPPFLAGS)   -c $< -o $@ $(LDFLAGS)
+	@echo 'Finished building $@'
+	@echo ' '
+
+blasroutines.o: blasroutines.cpp 
+	@echo 'Building $<'
+	$(CPP) $(CPPFLAGS)  -c $< -o $@ $(LDFLAGS) 
+	@echo 'Finished building $@'
+	@echo ' '
+
+tblisroutines.o: tblisroutines.cpp 
+	@echo 'Building $<'
+	$(CPP) $(CPPFLAGS)  -c $< -o $@ $(LDFLAGS) 
+	@echo 'Finished building $@'
+	@echo ' '
+
+
+testblas.exe: testblas.cpp blasroutines.o
+	@echo 'Building $<'
+	$(CPP) $(CPPFLAGS)  $^ -o $@ $(LDFLAGS)
+	@echo 'Finished building $@'
+	@echo ' '
+
+clean:
+	rm -f  *.o
+	rm -f *.exe
