@@ -77,56 +77,86 @@ namespace tensor{
   template<typename T>  
   std::tuple<Tensor<Real>,Tensor<T> > eigh(const Tensor<T>&A);
 
-  // std::tuple<Tensor<Complex>,Tensor<Complex> > eigh(const Tensor<Complex>&A);
-  // std::tuple<Tensor<Realb>,Tensor<Real> > eigh(const Tensor<Real>&A);
-  
   template<typename T>
   std::tuple<Tensor<Complex>,Tensor<Complex>,Tensor<Complex> > eig(const Tensor<T>&A);
+  
   template<typename T>
   void eig(const Tensor<T>&A,Tensor<Complex>&VL,Tensor<Complex>&EV,Tensor<Complex>&VR);
+  
   template<typename T>
   int svd(Tensor<T>A,Tensor<T>&U,Tensor<Real> &S,Tensor<T> &VH);
 
   template<typename T>  
   std::pair<Tensor<T>,Tensor<T> > qr(const Tensor<T>A,bool full=false);
+  
   template<typename T>  
   std::tuple<Tensor<T>,Tensor<Real>,Tensor<T> > svd(const Tensor<T>&A);
   
-  // template<typename T>
-  // void tblistensordot(const Tensor<T>&A,const Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C);
   template<typename T>
   void tblistensordot(Tensor<T>&A,Tensor<T>&B,LabelType labela,LabelType labelb,Tensor<T> &C);
+
+  template<typename T>
+  void tblistensordot(Tensor<T>&&A,Tensor<T>&B,LabelType labela,LabelType labelb,Tensor<T> &C);
+  
+  template<typename T>
+  void tblistensordot(Tensor<T>&A,Tensor<T>&&B,LabelType labela,LabelType labelb,Tensor<T> &C);
+  
+  template<typename T>
+  void tblistensordot(Tensor<T>&&A,Tensor<T>&&B,LabelType labela,LabelType labelb,Tensor<T> &C);
   
   template<typename T>
   void tcltensordot(Tensor<T>&A,Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C);
 
   template<typename T>
+  void tcltensordot(Tensor<T>&&A,Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C);
+  
+  template<typename T>
+  void tcltensordot(Tensor<T>&A,Tensor<T>&&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C);
+  
+  template<typename T>
+  void tcltensordot(Tensor<T>&&A,Tensor<T>&&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C);
+  
+  template<typename T>
   void gemmtensordot(Tensor<T>&&A,Tensor<T>&&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C);
+  
   template<typename T>
   void gemmtensordot(Tensor<T>&A,Tensor<T>&&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C);
+  
   template<typename T>
   void gemmtensordot(Tensor<T>&&A,Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C);
+  
   template<typename T>
   void gemmtensordot(Tensor<T>&A,Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C);
   
   template<typename T>
   void gemm_mv_dot(const Tensor<T>&A,const Tensor<T>&B,Tensor<T> &C,char TR='N');
+  
   template<typename T>
   Real gemm_vv_dot(const Tensor<T> &A,const Tensor<T>&B);
+  
   template<typename T>
   Real norm(const Tensor<T> &t);
+  
   Tensor<Complex> dot(Tensor<Complex>&A,Tensor<Complex>&B);
+  
   Tensor<Complex> dot(Tensor<Real>&A,Tensor<Complex>&B);
+  
   Tensor<Complex> dot(Tensor<Complex>&A,Tensor<Real>&B);
+  
   Tensor<Real> dot(Tensor<Real>&A,Tensor<Real>&B);
+  
   template<typename T>
   Tensor<T> conjugate(const Tensor<T> &A);
-  Real c_rand(Real min,Real max);
-  Complex c_rand(Complex min,Complex max);
-  Complex random_unit(Complex t);
-  Real random_unit(Real t);
-  Real random_unit(int t);  
   
+  Real c_rand(Real min,Real max);
+  
+  Complex c_rand(Complex min,Complex max);
+  
+  Complex random_unit(Complex t);
+  
+  Real random_unit(Real t);
+  
+  Real random_unit(int t);
   
   //##################################################################################################################################################################
 
@@ -270,6 +300,7 @@ namespace tensor{
     Tensor<T> conj()const;
     //return hermitian conjugated tensor    
     Tensor<T> herm()const;
+    void hermitian();    
     //inplace transpose (reverse all labels)
     void transpose();
     //return transposed tensor (reverse all labels)
@@ -322,15 +353,21 @@ namespace tensor{
 
     //reshape the tensor    
     template<typename... Shapes>
-    void reshape(Shapes...newshape);
+    void reshape(const Shapes&...newshape);
     void reshape(ShapeType shape);
 
     //return the shape of the tensor
     size_type shape(const lint n) const;
-    const ShapeType& shape () const;
-    ShapeType& shape ();
+    const ShapeType& shape() const;
+    template<std::size_t>
+    //returns the shape of the tensor; call signature is
+    //A.shape<r>() for a tensor with rank r (has to be known at compile time)
+    auto shape()const;
 
-    //return the size of the tensor    
+    //returns a reference to the ShapeType shape_ member of Tensor; ShapeType is std::vector<std::size_t>
+    ShapeType& shape();
+    
+    //return the size (=total number of elements) of the tensor    
     size_type size() const;
 
     //return the rank of the tensor        
@@ -465,11 +502,15 @@ namespace tensor{
     return out;
   }
   
+
+
   // ++++++++ operator / +++++++++++++++++++++++++++++++++++++++
 
   Tensor<Real> operator/(Real val,const Tensor<Real>& A){
-    Tensor<Real>  out=A;
-    out/=val;
+    Tensor<Real>  out(ShapeType(A.shape()));
+    for (lint n=0;n<A.size();n++){
+      out.raw()[n]=val/A.raw()[n];
+    }
     return out;
   }
 
@@ -481,7 +522,9 @@ namespace tensor{
 
   Tensor<Complex> operator/(Complex val,const Tensor<Complex>& A){
     Tensor<Complex>  out=A;
-    out/=val;
+    for (lint n=0;n<A.size();n++){
+      out.raw()[n]=val/A.raw()[n];
+    }
     return out;
   }
 
@@ -493,8 +536,10 @@ namespace tensor{
 
   
   Tensor<Complex> operator/(Real val,const Tensor<Complex>& A){
-    Tensor<Complex>  out=A;
-    out/=Complex(val,0.0);
+    Tensor<Complex>  out(ShapeType(A.shape()));
+    for (lint n=0;n<A.size();n++){
+      out.raw()[n]=val/A.raw()[n];
+    }
     return out;
   }
 
@@ -505,33 +550,24 @@ namespace tensor{
   }
   
   Tensor<Complex> operator/(const Tensor<Real>& A,Complex val){
-    Tensor<Complex>  out=toComplex(A);
+    Tensor<Complex>  out=A;
     out/=val;
     return out;
   }
   
   Tensor<Complex> operator/(Complex val,const Tensor<Real>& A){
-    Tensor<Complex>  out=toComplex(A);
-    out/=val;
+    Tensor<Complex> out(ShapeType(A.shape()));
+    for (lint n=0;n<A.size();n++){
+      out.raw()[n]=val/A.raw()[n];
+    }
     return out;
   }
 
 
   //rvalyue
-  Tensor<Real> operator/(Real val,Tensor<Real>&& A){
-    Tensor<Real>  out=std::move(A);
-    out/=val;
-    return out;
-  }
 
   Tensor<Real> operator/(Tensor<Real>&& A,Real val){
     Tensor<Real>  out=std::move(A);
-    out/=val;
-    return out;
-  }
-
-  Tensor<Complex> operator/(Complex val,Tensor<Complex>&& A){
-    Tensor<Complex>  out=std::move(A);
     out/=val;
     return out;
   }
@@ -542,12 +578,6 @@ namespace tensor{
     return out;
   }
   
-  Tensor<Complex> operator/(Real val,Tensor<Complex>&& A){
-    Tensor<Complex>  out=std::move(A);
-    out/=Complex(val,0.0);
-    return out;
-  }
-
   Tensor<Complex> operator/(Tensor<Complex>&& A,Real val){
     Tensor<Complex>  out=std::move(A);
     out/=Complex(val,0.0);
@@ -1986,6 +2016,12 @@ namespace tensor{
     return out;
   }
 
+  template<typename T>    
+  void Tensor<T>::hermitian(){
+    this->conjugate();
+    this->transpose();
+  }
+  
   //in-place complex conjugation
   template<typename T>
   void Tensor<T>::conjugate(){
@@ -2152,7 +2188,7 @@ namespace tensor{
   
   template<typename T>  
   template<typename... Shapes>
-  void Tensor<T>::reshape(Shapes...newshape){
+  void Tensor<T>::reshape(const Shapes&...newshape){
     try{
       check_integral(newshape...);
       vector<int>i={newshape...};
@@ -2185,10 +2221,17 @@ namespace tensor{
 
   template<typename T>
   size_type Tensor<T>::shape(const lint n) const {assert(n<rank_);return shape_[n];}
+  
   template<typename T>  
   const ShapeType& Tensor<T>::shape () const {return shape_;}
+  
   template<typename T>  
   ShapeType& Tensor<T>::shape () {return shape_;}
+
+  template<typename T>
+  template<std::size_t rank>
+  auto Tensor<T>::shape()const {return vectorToTuple<rank>(shape_);}
+  
   template<typename T>  
   size_type Tensor<T>::size() const {return this->data_.size();}
   template<typename T>  

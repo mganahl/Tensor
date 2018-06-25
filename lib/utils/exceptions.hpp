@@ -23,6 +23,7 @@ namespace exceptions{
     const char* msg_;
   };
 
+  
   class OutOfBoundError: public std::exception{
   public:
     OutOfBoundError(){
@@ -36,6 +37,7 @@ namespace exceptions{
   private:
     const char* msg_;
   };
+
   
   class DimensionMismatchError: public std::exception{
   public:
@@ -51,6 +53,7 @@ namespace exceptions{
     const char* msg_;
   };
 
+  
   class RankMismatchError: public std::exception{
   public:
     RankMismatchError(){
@@ -65,6 +68,7 @@ namespace exceptions{
     const char* msg_;
   };
   
+
   class SizeMismatchError: public std::exception{
   public:
     SizeMismatchError(){
@@ -82,7 +86,7 @@ namespace exceptions{
   class ShapeMismatchError: public std::exception{
   public:
     ShapeMismatchError(){
-      msg_="size mismatch";
+      msg_="shape mismatch";
     };
     ShapeMismatchError(const char * msg):msg_(msg){
     }

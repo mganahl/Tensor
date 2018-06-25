@@ -45,7 +45,8 @@ int main(int argc, char** argv){
   // auto bla1=random<Real>(4,4);
   // bla.print();
   // bla1.print();  
-  auto bla2=random<Complex>(4,4);   
+  auto bla2=random<Complex>(4,4);
+
   // auto bla3=random<Real>(4,4);
   // auto bla4=random<Real>(4,4);  
   // int k1=1;

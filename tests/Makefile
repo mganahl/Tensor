@@ -17,6 +17,12 @@ test.exe: test.cpp
 	$(CPP) $(CPPFLAGS) $(INCLUDES)  $^ -o $@ $(OBJ)  $(LDFLAGS) 
 	@echo 'Finished building $@'
 	@echo ' '
+testMPSlib.exe: testMPSlib.cpp
+	@echo 'Building $<'
+	$(CPP) $(CPPFLAGS) $(INCLUDES)  $^ -o $@ $(OBJ)  $(LDFLAGS) 
+	@echo 'Finished building $@'
+	@echo ' '
+
 tblisvsgemm.exe: tblisvsgemm.cpp
 	@echo 'Building $<'
 	$(CPP) $(CPPFLAGS) $(INCLUDES)  $^ -o $@ $(OBJ)  $(LDFLAGS) 

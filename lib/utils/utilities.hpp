@@ -21,6 +21,27 @@ using namespace exceptions;
 using std::size_t;
 using std::vector;
 namespace utilities {
+
+
+  /*helper function for turning a std::vector into a tuple*/
+  template <typename T, std::size_t... Indices>
+  auto vectorToTupleHelper(const std::vector<T>& v, std::index_sequence<Indices...>) {
+    return std::make_tuple(v[Indices]...);
+  }
+
+  
+  /*
+    takes a std::vector and turns it into  tuple:
+    auto[x1,x2,....,xN]=vectorToTuple<N>(v);
+    x1,..,xN contain the elements of v
+    N has to be passed as a constant expression, i.e. int N=v.size() is NOT possible right now
+  */
+  template <std::size_t N, typename T>
+  auto vectorToTuple(const std::vector<T>& v) {
+    assert(v.size() >= N);
+    return vectorToTupleHelper(v, std::make_index_sequence<N>());
+  }
+
   void msg(string s){
     cout<<s<<endl;
   }

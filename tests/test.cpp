@@ -12,9 +12,9 @@
 #include <tuple>
 #include <algorithm>
 #include <tblis.h>
-// #include"../lib/utils/utilities.hpp"
+#include"../lib/utils/utilities.hpp"
 // #include"../lib/array/tensor.hpp"
-//#include"../lib/array/tensoroperations.hpp"
+#include"../lib/array/tensoroperations.hpp"
 #include "lib/linalg/tblisroutines.hpp"
 #include "lib/linalg/lapackroutines.hpp"
 #include "lib/linalg/blasroutines.hpp"
@@ -29,6 +29,7 @@ using std::endl;
 using std::vector;
 using namespace std;
 using namespace tensor;
+using namespace utilities;
 using std::tuple;
 //using namespace utilities;
 //using namespace tensor;
@@ -86,19 +87,26 @@ void funbla(const Cl<T>& c){}
 Cl<Real> fun4(){
   return Cl<Real>();
 }
-int main(int argc, char** argv){
-  const char *p=std::getenv("BLA");
-  if(p!=NULL){
-    std::string s(p);
-    cout<<s<<endl;
-    if(s=="hello"){
-      cout<<"hello!"<<endl;
-    }
-  }else{
-    cout<<"BLA not found"<<endl;
-  }
 
-  float a=1.00000000002340923409203589;
-  int b=(int) a;
+
+std::tuple<int> v2t_1(vector<int>vec){
+  std::make_tuple(vec[0]);
+}
+std::tuple<int,int,int> v2t_2(vector<int>vec){
+  std::make_tuple(vec[0],vec[1]);
+}
+auto v2t_3(vector<int>vec){
+  std::make_tuple(vec[0],vec[1],vec[2]);
+}
+std::tuple<int,int,int,int> v2t_4(vector<int>vec){
+  std::make_tuple(vec[0],vec[1],vec[2],vec[3]);
+}
+
+int main(int argc, char** argv){
+  auto a=random<Real>(2,3,4);
+  auto[d1,d2,d3]=shape<3>(a);
+  auto[c1,c2,c3]=a.shape<3>();
+  cout<<c1<<" "<<c2<<" "<<c3<<endl;
+  cout<<d1<<" "<<d2<<" "<<d3<<endl;  
   return 0;
 }

@@ -134,6 +134,18 @@ namespace tensor{
     return Tensor<T>().random(shape);
   }
 
+  template<typename T>
+  T sum(const Tensor<T>& A){
+    return std::accumulate(A.data().begin(),A.data().end(),T(0.0));
+  }
+
+  template<typename T>
+  T trace(const Tensor<T>& A){
+    if (A.rank()!=2){
+      throw RankMismatchError("in trace(const Tensor<T>& A: expected a rank 2 tensor");
+    }
+    return sum(diag(A));
+  }
   
   /*
     returns a random real tensor of dimension shape...;  values are initialized with values uniformly in [-1,1]
@@ -319,79 +331,6 @@ namespace tensor{
     return {U,S,VH};    
   }
 
-  /*
-    void tblistensordot(Tensor<T>&A,Tensor<T>&B,LabelType labela,LabelType labelb,Tensor<T> &C):
-    
-    calculates the contraction of tensors A and B over the indices labela and labelb, using the tblis library (see devin matthews on github)
-    labela and labelb are integer labels; positive labels are used to denote common contractions, negative labels
-    are used to denote uncontracted indices. The uncontracted indices of the resulting tensor are ordered
-    according with the largest indices coming first, e.g.
-    labela=(1,2,-2,,3,-3), labelb=(2,-1,1,3) -> labelout=(-1,-2,-3), contraction over labels (1,2,3)
-  */
-   // template<typename T>
-   // void tblistensordot(const Tensor<T>&A,const Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C){
-  
-   // template<typename T>
-   // void tblistensordot(Tensor<T>&A,Tensor<T>&B,LabelType labela,LabelType labelb,Tensor<T> &C){
-   //   //=================== do some checks ========================================
-   //   for (auto m:labela)
-   //     if (m==0)
-   //    	throw std::runtime_error("in tblistensordot: one of the labels of Tensor A is 0; use positive or negative values only");
-   //   for (auto m:labelb)
-   //     if (m==0)
-   //    	throw std::runtime_error("in tblistensordot: one of the labels of Tensor B is 0; use positive or negative values only");
-   //   if (A.rank()!=labela.size())
-   //     throw std::runtime_error("in tblistensordot: number of labels give for tensor A is different from rank(A)");
-   //   if (B.rank()!=labelb.size())
-   //     throw std::runtime_error("in tblistensordot: number of labels give for tensor B is different from rank(B)");
-
-   //   auto common=intersection(labela,labelb);
-   //   LabelType labelout=resultinglabel(labela,labelb);
-   //   for(auto n:common){
-   //     if(n<0)
-   //    	throw std::runtime_error("in tblistensordot: got an outgoing negative index more than once");
-   //     int l,m;
-   //     for (m=0;m<labela.size();m++)
-   //    	if (labela[m]==n)
-   //    	  break;
-   //     for (l=0;l<labelb.size();l++)
-   //    	if (labelb[l]==n)
-   //    	  break;
-   //     if (A.shape(m)!=B.shape(l))
-   //    	throw std::runtime_error("in tblistensordot: some dimensions of the tensorlegs are not matching");
-   //   }
-   //   for(auto n: labelout){
-   //     if(n>=0)
-   //    	throw std::runtime_error("in tblistensordot: got an outgoing label >=0,use only negative integers for outgoing labels");
-   //   }
-
-   //   //=================== finished checks ========================================
-   //   //if labelout.size()==0, the two tensors have to be fully contracted (i.e. all labels of A appear in B and vice veres).
-   //   if (labelout.size()==0){
-   //     C.resize(1);
-   //     C(0)=tblis_dot(&A.shape(), &A.stride(), A.raw(),&B.shape(),&B.stride(),B.raw(), &labela,&labelb);
-   //   }      
-   //   if (labelout.size()>0){    
-   //     ShapeType dims;
-   //     for (auto n:labelout){
-   //    	for (int m=0;m<labela.size();m++)
-   //    	  if (n==labela[m]){
-   //    	    dims.push_back(A.shape(m));
-   //    	    break;
-   //    	  }
-   //    	for (int m=0;m<labelb.size();m++)
-   //    	  if (n==labelb[m]){
-   //    	    dims.push_back(B.shape(m));
-   //    	    break;
-   //    	  }
-   //     }
-   //     C.resize(dims);
-   //     C.reset(T(0.0));       
-   //     tblis_contract_tensors(&A.shape(), &A.stride(), A.raw(),&B.shape(),&B.stride(),B.raw(), \
-   //    			     &C.shape(), &C.stride(),C.raw(),
-   //    			     &labela,&labelb,&labelout);
-   //   }
-   // }
 
   /* 
      see void gemmtensordot(Tensor<T>&A,Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C){
@@ -417,6 +356,16 @@ namespace tensor{
     tblistensordot(A,B,labela,labelb,C);
   }
 
+
+  /*
+    void tblistensordot(Tensor<T>&A,Tensor<T>&B,LabelType labela,LabelType labelb,Tensor<T> &C):
+    
+    calculates the contraction of tensors A and B over the indices labela and labelb, using the tblis library (see devin matthews on github)
+    labela and labelb are integer labels; positive labels are used to denote common contractions, negative labels
+    are used to denote uncontracted indices. The uncontracted indices of the resulting tensor are ordered
+    according with the largest indices coming first, e.g.
+    labela=(1,2,-2,,3,-3), labelb=(2,-1,1,3) -> labelout=(-1,-2,-3), contraction over labels (1,2,3)
+  */
   template<typename T>
   void tblistensordot(Tensor<T>&A,Tensor<T>&B,LabelType labela,LabelType labelb,Tensor<T> &C){
     //for the tblis tensordor, the resulting tensor has to be initialized with 0.0!
@@ -913,18 +862,6 @@ namespace tensor{
   }
 
 
-
-
-
-
-
-
-
-
-
-
-
-  
   /*
     computes A.dot(B), where A is a matrix and B is a vector,
     char='N' computes A*B, char ='T' computes A.transpose()*B, and char ='C' computes A.transpose().conjugate()*B
@@ -982,7 +919,58 @@ namespace tensor{
     return A.herm();
   }
 
+  template<typename T>
+  Tensor<T> reshape(const Tensor<T> &A,const ShapeType& shape){
+    Tensor<T> out(A);
+    out.reshape(shape);
+    return out;
+  }
 
+  template<typename T,typename ...Shapes>
+  Tensor<T> reshape(const Tensor<T> &A,const Shapes& ... shape){
+    Tensor<T> out=A;
+    out.reshape(shape...);
+    return out;
+  }
+  
+  template<typename T>
+  Tensor<T> reshape(Tensor<T> &&A,const ShapeType& shape){
+    Tensor<T> out=std::move(A);
+    out.reshape(shape);
+    return out;
+  }
+  
+
+  template<typename T,typename ...Shapes>
+  Tensor<T> reshape(Tensor<T> &&A,const Shapes& ... shape){
+    Tensor<T> out=std::move(A);
+    out.reshape(shape...);
+    return out;
+  }
+
+  template<typename T>
+  Tensor<T> reshape(const Tensor<T> &&A,const ShapeType& shape){
+    Tensor<T> out=std::move(A);
+    out.reshape(shape);
+    return out;
+  }
+
+  /*
+    returns the shape of Tensor A in a tuple of type int
+    auto[x1,x2,....,xN]=shape<N>(A);
+    x1,..,xN contain the dimensions of the legs of A
+    N has to be passed as a constant expression, i.e. int N=A.rank() is NOT possible right now
+  */
+
+  template <std::size_t rank, typename T>
+  auto shape(const Tensor<T>& A) {
+    if (A.rank() != rank){
+      throw OutOfBoundError("shape<rank>(Tensor<T> A): template parameter 'rank' does not match A.rank()");
+    }
+    vector<int> shape(A.shape().begin(),A.shape().end());
+    return vectorToTupleHelper(shape, std::make_index_sequence<rank>());
+  }
+  
   /*calculate the dot product between tensors and B; A and B have to be vectors or matrices of matching dimensions*/
   Tensor<Complex> dot(Tensor<Complex>&A,Tensor<Complex>&B){
     Tensor<Complex> C;
