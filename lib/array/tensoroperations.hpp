@@ -37,13 +37,18 @@ using namespace blasroutines;
 using namespace tblisroutines;
 using namespace printfunctions;
 using std::cout;
-using printfunctions::print;
 using std::setprecision;
 using std::endl;
 using std::vector;
 
 namespace tensor{
-
+  Tensor<Complex> determineReturnType(const Tensor<Complex>&,const  Tensor<Complex>&){};
+  Tensor<Complex> determineReturnType(const Tensor<Complex>&,const  Tensor<Real>&){};
+  Tensor<Complex> determineReturnType(const Tensor<Real>&,const  Tensor<Complex>&){};
+  Tensor<Real> determineReturnType(Tensor<Real>&, Tensor<Real>&){};
+  
+  bool isComplex(const Tensor<Complex>&){return true;}
+  bool isComplex(const Tensor<Real>&){return false;}
   Real c_rand(Real min,Real max){
     assert(min<=max);
     return min +fabs(max-min)*rand()/RAND_MAX;
@@ -148,12 +153,6 @@ namespace tensor{
   }
   
   /*
-    returns a random real tensor of dimension shape...;  values are initialized with values uniformly in [-1,1]
-    auto t= random_real(ShapeType{d1,...,dn}) 
-  */
-
-  
-  /*
     create a diagonal matrix from a rank 1 tensor or return the diagonal of a rank 2 tensor
     if tensor is rank 1, returns a diagonal tensor of rank 2 with elements of tensor on the diagonal
     if tensor is rank 2, returns the diagonal tensor in a rank 1 tensor
@@ -203,12 +202,12 @@ namespace tensor{
 
 
   /*
-    calculates eigenvectors and eigenvalues (EV) of a square hermitian real or complex matrix A;
-    returns a tuple containin VL,EV and VR; 
+    calculates eigenvectors  (VR) and eigenvalues (EV) of a square hermitian real or complex matrix A;
+    returns a pair containin EV and VR; 
     
   */
   template<typename T>
-  std::tuple<Tensor<Real>,Tensor<T> > eigh(const Tensor<T>&A){
+  std::pair<Tensor<Real>,Tensor<T> > eigh(const Tensor<T>&A){
     //do some checks:
     if (A.rank()!=2)
       throw RankMismatchError("eig: rank of tensor !=2!");
@@ -225,9 +224,10 @@ namespace tensor{
   /*
     calculates left (VL) and right (VR) eigenvectors and eigenvalues (EV) of a square matrix A;
     returns a tuple containin VL,EV and VR; 
+    note that lapack::eig destroys the contenst of the first argument! pass a copy to preserve A
   */
   template<typename T>
-  std::tuple<Tensor<Complex>,Tensor<Complex>,Tensor<Complex> > eig(const Tensor<T>&A){
+  std::tuple<Tensor<Complex>,Tensor<Complex>,Tensor<Complex> > eig(Tensor<T>A){
     //do some checks:
     if (A.rank()!=2)
       throw RankMismatchError("eig: rank of tensor !=2!");
@@ -235,18 +235,34 @@ namespace tensor{
       throw SizeMismatchError("eig: matrix is not square!");
     
     Tensor<Complex> VL(A.shape()),EV(ShapeType{A.shape(0)}),VR(A.shape());
-    //eig destroys the contenst of the first argument! pass a copy to preserve A
-    lapackroutines::eig(A.copy().raw(),A.shape(0),VL.raw(),EV.raw(),VR.raw(),'V','V');        
+
+    lapackroutines::eig(A.raw(),A.shape(0),VL.raw(),EV.raw(),VR.raw(),'V','V');        
     return {VL,EV,VR};    
   }
 
+  
+  template<typename T>
+  std::tuple<Tensor<Complex>,Tensor<Complex>,Tensor<Complex> > eig(Tensor<T>&&A){
+    //do some checks:
+    if (A.rank()!=2)
+      throw RankMismatchError("eig: rank of tensor !=2!");
+    if (A.shape(0)!=A.shape(1))
+      throw SizeMismatchError("eig: matrix is not square!");
+    
+    Tensor<Complex> VL(A.shape()),EV(ShapeType{A.shape(0)}),VR(A.shape());
+
+    lapackroutines::eig(A.raw(),A.shape(0),VL.raw(),EV.raw(),VR.raw(),'V','V');        
+    return {VL,EV,VR};    
+  }
+  
   /*
     calculates left (VL) and right (VR) eigenvectors and eigenvalues (EV) of a square matrix A;
     VL,VR and EV are internally resized to match the dimension of A
+    note that below, lapackroutines::eig destroys the contents of A! A is thus passed as a copy to eig
   */
   
   template<typename T>
-  void eig(const Tensor<T>&A,Tensor<Complex>&VL,Tensor<Complex>&EV,Tensor<Complex>&VR){
+  void eig(Tensor<T>A,Tensor<Complex>&VL,Tensor<Complex>&EV,Tensor<Complex>&VR){
     //do some checks:
     if (A.rank()!=2)
       throw RankMismatchError("eig: rank of tensor !=2!");
@@ -254,15 +270,29 @@ namespace tensor{
       throw SizeMismatchError("eig: matrix is not square!");
     
     VL.resize(A.shape()),EV.resize(ShapeType{A.shape(0)}),VR.resize(A.shape());
-    //eig destroys the contenst of the first argument! pass a copy to preserve A
-    lapackroutines::eig(A.copy().raw(),A.shape(0),VL.raw(),EV.raw(),VR.raw(),'V','V');        
+
+    lapackroutines::eig(A.raw(),A.shape(0),VL.raw(),EV.raw(),VR.raw(),'V','V');        
+  }
+  
+  template<typename T>
+  void eig(Tensor<T>&&A,Tensor<Complex>&VL,Tensor<Complex>&EV,Tensor<Complex>&VR){
+    //do some checks:
+    if (A.rank()!=2)
+      throw RankMismatchError("eig: rank of tensor !=2!");
+    if (A.shape(0)!=A.shape(1))
+      throw SizeMismatchError("eig: matrix is not square!");
+    
+    VL.resize(A.shape()),EV.resize(ShapeType{A.shape(0)}),VR.resize(A.shape());
+
+    lapackroutines::eig(A.raw(),A.shape(0),VL.raw(),EV.raw(),VR.raw(),'V','V');        
   }
 
   /*
-    QR decomposition of Tensor A with shape M,N, a has to be rank==2;
-    if M>N and full=true, returns Q=M,M, and R=M,N matrix, with Q a unitary and R an upper triangular matrix
-    if M>N and full=false, returns Q of shape (M,N) and R of shape (N,N) matrix, with Q an isometry of the form herm(Q).dot(Q)=11 and R an upper triangular matrix; note that Q.dot(herm(Q))!=11!
-    if M<=N and full has no effect on the result;in this case, Q.shape()=(M,M), R.shape()=(M,N) for any value of full, and Q will be full unitary;
+    QR decomposition of Tensor A with shape M,N; A has to be of A.rank()==2!;
+    if M>N and full=true, returns Q.shape()=(M,M), and R.shape()=(M,N) matrix, with Q a unitary and R an upper triangular matrix
+    if M>N and full=false, returns Q with Q.shape()=(M,N) and R with R.shape()= (N,N), with Q an isometry of the form herm(Q).dot(Q)=11 and R an upper triangular matrix; 
+    note that Q.dot(herm(Q))!=11!
+    if M<=N, the value of full has no effect on the result; in this case, Q.shape()=(M,M), R.shape()=(M,N) for any value of full, and Q will be a unitary matrix
   */
   
   template<typename T>
@@ -295,7 +325,7 @@ namespace tensor{
     }
   }
 
-  //svd of Tensor A, a has to be rank==2; U,S,VH are resized within the routine
+  //svd of Tensor A, A has to be A.rank()==2; U,S,VH are resized within the routine
   //A has to be passed by value because lapack svd is not preserving it
   //this svd is always of "economic" type
   template<typename T>
@@ -321,7 +351,7 @@ namespace tensor{
     }
   }
 
-  //svd of Tensor A, a has to be rank==2;
+  //svd of Tensor A, A has to be A.rank()==2;
   //returns a tuple containing U,S,VH, such that A=U.dot(diag(S)).dot(VH);
   template<typename T>  
   std::tuple<Tensor<T>,Tensor<Real>,Tensor<T> > svd(const Tensor<T>&A){
@@ -333,7 +363,7 @@ namespace tensor{
 
 
   /* 
-     see void gemmtensordot(Tensor<T>&A,Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C){
+     see void tblistensordot(Tensor<T>&A,Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C){
   */
   template<typename T>
   void tblistensordot(Tensor<T>&&A,Tensor<T>&&B,LabelType labela,LabelType labelb,Tensor<T> &C){
@@ -377,15 +407,15 @@ namespace tensor{
       if (m==0)
        	throw std::runtime_error("in tblistensordot: one of the labels of Tensor B is 0; use positive or negative values only");
     if (A.rank()!=labela.size())
-      throw std::runtime_error("in tblistensordot: number of labels give for tensor A is different from rank(A)");
+      throw std::runtime_error("in tblistensordot: number of labels given for tensor A is different from rank(A)");
     if (B.rank()!=labelb.size())
-      throw std::runtime_error("in tblistensordot: number of labels give for tensor B is different from rank(B)");
+      throw std::runtime_error("in tblistensordot: number of labels given for tensor B is different from rank(B)");
 
     auto common=intersection(labela,labelb);
     LabelType labelout=resultinglabel(labela,labelb);
     for(auto n:common){
       if(n<0)
-       	throw std::runtime_error("in tblistensordot: got an outgoing negative index more than once");
+       	throw std::runtime_error("in tblistensordot: got an outgoing negative label more than once; use positive labels to denote common contraction");
       int l,m;
       for (m=0;m<labela.size();m++)
        	if (labela[m]==n)
@@ -397,8 +427,8 @@ namespace tensor{
        	throw std::runtime_error("in tblistensordot: some dimensions of the tensorlegs are not matching");
     }
     for(auto n: labelout){
-      if(n>=0)
-       	throw std::runtime_error("in tblistensordot: got an outgoing label >=0,use only negative integers for outgoing labels");
+      if(n>0)
+       	throw std::runtime_error("in tblistensordot: got an outgoing label>0; positive labels are used to denote uncontracted indices");
     }
 
     //=================== finished checks ========================================
@@ -474,38 +504,38 @@ namespace tensor{
   
   template<typename T>
   void tcltensordot(Tensor<T>&A,Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C){
+
     for (auto m:labela)
       if (m==0)
-	throw std::runtime_error("in tcltensordot: one of the labels of Tensor A is 0; use positive or negative values only");
+       	throw std::runtime_error("in tcltensordot: one of the labels of Tensor A is 0; use positive or negative values only");
     for (auto m:labelb)
       if (m==0)
-	throw std::runtime_error("in tcltensordot: one of the labels of Tensor B is 0; use positive or negative values only");
-  
+       	throw std::runtime_error("in tcltensordot: one of the labels of Tensor B is 0; use positive or negative values only");
     if (A.rank()!=labela.size())
-      throw std::runtime_error("in tcltensordot: number of labels give for tensor A is different from rank(A)");
+      throw std::runtime_error("in tcltensordot: number of labels given for tensor A is different from rank(A)");
     if (B.rank()!=labelb.size())
-      throw std::runtime_error("in tcltensordot: number of labels give for tensor B is different from rank(B)");
+      throw std::runtime_error("in tcltensordot: number of labels given for tensor B is different from rank(B)");
 
     auto common=intersection(labela,labelb);
     LabelType labelout=resultinglabel(labela,labelb);
     for(auto n:common){
       if(n<0)
-	throw std::runtime_error("in tcltensordot: got an outgoing negative index more than once");
-    
+       	throw std::runtime_error("in tcltensordot: got an outgoing negative label more than once; use positive labels to denote common contraction");
       int l,m;
       for (m=0;m<labela.size();m++)
-	if (labela[m]==n)
-	  break;
+       	if (labela[m]==n)
+       	  break;
       for (l=0;l<labelb.size();l++)
-	if (labelb[l]==n)
-	  break;
+       	if (labelb[l]==n)
+       	  break;
       if (A.shape(m)!=B.shape(l))
-	throw std::runtime_error("in tcltensordot: some dimensions of the tensorlegs are not matching");
+       	throw std::runtime_error("in tcltensordot: some dimensions of the tensorlegs are not matching");
     }
     for(auto n: labelout){
-      if(n>=0)
-	throw std::runtime_error("in tcltensordot: got an outgoing label >=0,use only negative integers for outgoing labels");
+      if(n>0)
+       	throw std::runtime_error("in tcltensordot: got an outgoing label>0; positive labels are used to denote uncontracted indices");
     }
+
     if (labelout.size()==0){
       /*
 	do a full contraction; bring labels of tensor two B the same order as tensor one; this uses ddot_ for full contraction.
@@ -615,45 +645,36 @@ namespace tensor{
 
   template<typename T>
   void gemmtensordot(Tensor<T>&A,Tensor<T>&B,const LabelType& labela,const LabelType& labelb,Tensor<T> &C){
-    //assert that only integers!=0 are used as labels
+
     for (auto m:labela)
       if (m==0)
-   	throw std::runtime_error("in gemmtensordot: one of the labels of Tensor A is 0; use positive or negative values only");
+       	throw std::runtime_error("in gemmtensordot: one of the labels of Tensor A is 0; use positive or negative values only");
     for (auto m:labelb)
       if (m==0)
-   	throw std::runtime_error("in gemmtensordot: one of the labels of Tensor B is 0; use positive or negative values only");
-
-    //check that the labelsizes match the tensor ranks
-    if (A.rank()!=labela.size()){
+       	throw std::runtime_error("in gemmtensordot: one of the labels of Tensor B is 0; use positive or negative values only");
+    if (A.rank()!=labela.size())
       throw std::runtime_error("in gemmtensordot: number of labels given for tensor A is different from rank(A)");
-    }
     if (B.rank()!=labelb.size())
       throw std::runtime_error("in gemmtensordot: number of labels given for tensor B is different from rank(B)");
 
-
-    //get the common labels, i.e. those that are in labela and labelb
-    auto commonlabel=intersection(labela,labelb);
-    //get the resulting label after contracting everything
+    auto common=intersection(labela,labelb);
     LabelType labelout=resultinglabel(labela,labelb);
-    //check that the common labels are all positive (negative labels should only be used for non-ncontracted indices)
-    //check that the contracted dimensions of the tensor are matching
-    for(auto n:commonlabel){
+    for(auto n:common){
       if(n<0)
-	throw std::runtime_error("in gemmtensordot: got an outgoing negative index more than once; use positive integers to denote common contractions");
+       	throw std::runtime_error("in gemmtensordot: got an outgoing negative label more than once; use positive labels to denote common contraction");
       int l,m;
       for (m=0;m<labela.size();m++)
-	if (labela[m]==n)
-	  break;
+       	if (labela[m]==n)
+       	  break;
       for (l=0;l<labelb.size();l++)
-	if (labelb[l]==n)
-	  break;
+       	if (labelb[l]==n)
+       	  break;
       if (A.shape(m)!=B.shape(l))
-	throw std::runtime_error("in gemmtensordot: some dimensions of the tensorlegs are not matching");
+       	throw std::runtime_error("in gemmtensordot: some dimensions of the tensorlegs are not matching");
     }
-    //check that the finale labels are all negative
     for(auto n: labelout){
-      if(n>=0)
-	throw std::runtime_error("in gemmtensordot: got an outgoing label >=0,use only negative integers for outgoing labels");
+      if(n>0)
+       	throw std::runtime_error("in gemmtensordot: got an outgoing label>0; positive labels are used to denote uncontracted indices");
     }
     //the resulting label can have length 0, which means that the tensors are fully contracted;
     if (labelout.size()==0){
@@ -701,8 +722,8 @@ namespace tensor{
 
       //CONTRACTED indices of A are transposed to the end of A, the contracted indices of B are transposed to the beginning of B:
       //aminuscommon has all negative labels of A
-      auto aminuscommon=difference(labela,commonlabel);
-      auto bminuscommon=difference(labelb,commonlabel);
+      auto aminuscommon=difference(labela,common);
+      auto bminuscommon=difference(labelb,common);
       LabelType transp_pos_label_a,transp_pos_label_b,transplabela,transplabelb,finallabel,final_pos_label_a,final_pos_label_b;
       ShapeType newshape;
       size_type dA1=1,dAB=1,dB2=1;
@@ -717,7 +738,7 @@ namespace tensor{
 	    break;
 	  }
       }
-      for(auto c:commonlabel){
+      for(auto c:common){
 	transplabela.push_back(c);
 	transplabelb.push_back(c);      
 	for(int n=0;n<labela.size();n++)
@@ -763,7 +784,7 @@ namespace tensor{
 	  }
       C.hptt(final_pos_label);
 
-      //restore the original shape of A
+      //restore the original shapes of A and B
       for(auto la:labela){
 	for(int n=0;n<transplabela.size();n++){
 	  if(la==transplabela[n]){

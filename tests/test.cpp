@@ -102,11 +102,18 @@ std::tuple<int,int,int,int> v2t_4(vector<int>vec){
   std::make_tuple(vec[0],vec[1],vec[2],vec[3]);
 }
 
+Complex determineReturnType(Complex&, Complex&);
+Complex determineReturnType(Complex&, Real&);
+Complex determineReturnType(Real&, Complex&);
+Complex determineReturnType(Real&, Real&);  
+
+template<typename T1,typename T2>
+auto add(T1 a, T2 b)->decltype(determineReturnType(a,b)){
+  return "h";
+}
 int main(int argc, char** argv){
-  auto a=random<Real>(2,3,4);
-  auto[d1,d2,d3]=shape<3>(a);
-  auto[c1,c2,c3]=a.shape<3>();
-  cout<<c1<<" "<<c2<<" "<<c3<<endl;
-  cout<<d1<<" "<<d2<<" "<<d3<<endl;  
-  return 0;
+  Real a=1;
+  Complex b=2;
+  auto d=add(a,b);
+  cout<<d<<endl;
 }
