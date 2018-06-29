@@ -11,4 +11,5 @@ Dependencies:
 * HTPP (https://github.com/springer13/hptt)
 * BLAS
 * LAPACK
+
 A more thourough documentation will be written at a later stage 
