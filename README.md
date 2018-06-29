@@ -12,4 +12,4 @@ Dependencies:
 * BLAS
 * LAPACK
 
-A more thorrough documentation will be written at a later stage 
+A more thorough documentation will be written at a later stage 
