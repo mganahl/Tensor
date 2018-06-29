@@ -1,9 +1,9 @@
 # Tensor
 This is a templated tensor class for tensor network calculations.
 Tensor supports operation such as:
-* arithmetic
-* tensor contractions using either of: TBLIS, TCL or _GEMM
-* decomposition such as: qr, svd, eig, eigh
+* arithmetic of tensors and numbers
+* tensor contractions using either of: TBLIS, TCL or _GEMM (can be selected via environment variable)
+* matrix decomposition such as: qr, svd, eig, eigh
 
 Dependencies:
 * TBLIS (https://github.com/devinamatthews/tblis)
