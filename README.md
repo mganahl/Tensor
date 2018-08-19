@@ -8,7 +8,7 @@ Tensor supports operation such as:
 Dependencies:
 * TBLIS (https://github.com/devinamatthews/tblis)
 * TCL (https://github.com/springer13/tcl)
-* HTPP (https://github.com/springer13/hptt)
+* HPTT (https://github.com/springer13/hptt)
 * BLAS
 * LAPACK
 
