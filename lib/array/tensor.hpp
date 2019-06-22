@@ -44,9 +44,15 @@ using  std::vector;
 
 namespace tensor{
 
-  //################################################3      some forward declarations from tensoroperations.hpp        #############################################################
+  //#########     some forward declarations from tensoroperations.hpp   #############
+  //Tensor is defined below
+  //Tensor is templated on the data-type only
   template<typename T>
   class Tensor;
+
+  /*
+    functions for creating tensors, i.e. ones, random, zeros, ...
+  */
   template<typename T,typename... Shapes>
   Tensor<T> ones(const Shapes& ... shape);
   template<typename T>
@@ -168,21 +174,40 @@ namespace tensor{
   bool isComplex(const Tensor<Real>&);
 
     
-  //##################################################################################################################################################################
+  //######################################    end of forward declarations    #####################################
+  // **************   Use CRTP to implement Tensor operations:  ****************************
+  
+  template<typename T>
+  class TensorExpression{
+  public:
+    
+  private:
+    TensorExpression(){};//to prevent buggy code, see Fluent {C++} blog by Jonathan Boccara for an explanation
+    friend T;
 
+  };
+  // **************************************************************************************
+  
   template<typename T>
   class Tensor{
   public:
     /* Constructor Definitions*/
     /*construct an empty object*/
     Tensor();
-    
+
+    /*
+      variadic template constructor
+      
+    */
     template<typename... Dimensions>
     Tensor(const Dimensions&... dims);
-    /*constructs a tensor of rank given by length of shape; data is stored in a std::vector<T>; the data is not initialized
-      signature of the constructor: Tensor<T> t(std::vector<unsigned int>{s1,s2,s3,...,sN}) constructs a tensor of type T and size (s1,s2,...,sN)
+
+
+    /*constructs a tensor with rank given by length of shape; data is stored in a std::vector<T>; 
+      the data is not initialized
+      signature of the constructor: Tensor<T> t(std::vector<unsigned int>{s1,s2,s3,...,sN}) 
+      constructs a tensor of type T and size (s1,s2,...,sN)
     */
-    
     Tensor(const ShapeType& shape);
     /*
       constructs an empty tensor from a vector of Slice objects
@@ -225,7 +250,7 @@ namespace tensor{
     template<typename... Inds>
     T& operator()(Inds... inds);
     template<typename... Inds>    
-    T operator()(Inds... inds)const;
+    const T& operator()(Inds... inds)const;
     
     /*
       check_integral takes a parameter pack and recursively checks if all types are integral
@@ -404,7 +429,7 @@ namespace tensor{
     
   // ============================================     operations on tensors ===========================================
 
-  Tensor<Complex> toComplex(const Tensor<Real> &A){
+  const Tensor<Complex> toComplex(const Tensor<Real> &A){
     Tensor<Complex> out(A.shape());
     for(luint n=0;n<A.size();n++){
       out.raw()[n]=Complex(A.raw()[n],0.0);
@@ -412,7 +437,7 @@ namespace tensor{
     return out;
   }
   
-  Tensor<Complex> toComplex(const Tensor<Real> &&A){
+  const Tensor<Complex> toComplex(const Tensor<Real> &&A){
     Tensor<Complex> out(A.shape());
     for(luint n=0;n<A.size();n++){
       out.raw()[n]=Complex(A.raw()[n],0.0);
@@ -426,49 +451,49 @@ namespace tensor{
 
   
   // ++++++++ operator *+++++++++++++++++++++++++++++++++++++++
-  Tensor<Real> operator*(Real val,const Tensor<Real>& A){
+  const Tensor<Real> operator*(Real val,const Tensor<Real>& A){
     Tensor<Real>  out=A;
     out*=val;
     return out;
   }
 
-  Tensor<Real> operator*(const Tensor<Real>& A,Real val){
+  const Tensor<Real> operator*(const Tensor<Real>& A,Real val){
     Tensor<Real>  out=A;
     out*=val;
     return out;
   }
 
-  Tensor<Complex> operator*(Complex val,const Tensor<Complex>& A){
+  const Tensor<Complex> operator*(Complex val,const Tensor<Complex>& A){
     Tensor<Complex>  out=A;
     out*=val;
     return out;
   }
 
-  Tensor<Complex> operator*(const Tensor<Complex>& A,Complex val){
+  const Tensor<Complex> operator*(const Tensor<Complex>& A,Complex val){
     Tensor<Complex>  out=A;
     out*=val;
     return out;
   }
   
-  Tensor<Complex> operator*(Real val,const Tensor<Complex>& A){
+  const Tensor<Complex> operator*(Real val,const Tensor<Complex>& A){
     Tensor<Complex>  out=A;
     out*=Complex(val,0.0);
     return out;
   }
 
-  Tensor<Complex> operator*(const Tensor<Complex>& A,Real val){
+  const Tensor<Complex> operator*(const Tensor<Complex>& A,Real val){
     Tensor<Complex>  out=A;
     out*=Complex(val,0.0);
     return out;
   }
   
-  Tensor<Complex> operator*(const Tensor<Real>& A,Complex val){
+  const Tensor<Complex> operator*(const Tensor<Real>& A,Complex val){
     Tensor<Complex>  out=A;
     out*=val;
     return out;
   }
   
-  Tensor<Complex> operator*(Complex val,const Tensor<Real>& A){
+  const Tensor<Complex> operator*(Complex val,const Tensor<Real>& A){
     Tensor<Complex>  out=A;
     out*=val;
     return out;
@@ -476,37 +501,37 @@ namespace tensor{
 
 
   //============================   rvalue
-  Tensor<Real> operator*(Real val,Tensor<Real>&& A){
+  const Tensor<Real> operator*(Real val,Tensor<Real>&& A){
     Tensor<Real>  out=std::move(A);
     out*=val;
     return out;
   }
 
-  Tensor<Real> operator*(Tensor<Real>&& A,Real val){
+  const Tensor<Real> operator*(Tensor<Real>&& A,Real val){
     Tensor<Real>  out=std::move(A);
     out*=val;
     return out;
   }
 
-  Tensor<Complex> operator*(Complex val,Tensor<Complex>&& A){
+  const Tensor<Complex> operator*(Complex val,Tensor<Complex>&& A){
     Tensor<Complex>  out=std::move(A);
     out*=val;
     return out;
   }
 
-  Tensor<Complex> operator*(Tensor<Complex>&& A,Complex val){
+  const Tensor<Complex> operator*(Tensor<Complex>&& A,Complex val){
     Tensor<Complex>  out=std::move(A);
     out*=val;
     return out;
   }
   
-  Tensor<Complex> operator*(Real val,Tensor<Complex>&& A){
+  const Tensor<Complex> operator*(Real val,Tensor<Complex>&& A){
     Tensor<Complex>  out=std::move(A);
     out*=Complex(val,0.0);
     return out;
   }
 
-  Tensor<Complex> operator*(Tensor<Complex>&& A,Real val){
+  const Tensor<Complex> operator*(Tensor<Complex>&& A,Real val){
     Tensor<Complex>  out=std::move(A);
     out*=Complex(val,0.0);
     return out;
@@ -516,7 +541,7 @@ namespace tensor{
 
   // ++++++++ operator / +++++++++++++++++++++++++++++++++++++++
 
-  Tensor<Real> operator/(Real val,const Tensor<Real>& A){
+  const Tensor<Real> operator/(Real val,const Tensor<Real>& A){
     Tensor<Real>  out(ShapeType(A.shape()));
     for (lint n=0;n<A.size();n++){
       out.raw()[n]=val/A.raw()[n];
@@ -524,13 +549,13 @@ namespace tensor{
     return out;
   }
 
-  Tensor<Real> operator/(const Tensor<Real>& A,Real val){
+  const Tensor<Real> operator/(const Tensor<Real>& A,Real val){
     Tensor<Real>  out=A;
     out/=val;
     return out;
   }
 
-  Tensor<Complex> operator/(Complex val,const Tensor<Complex>& A){
+  const Tensor<Complex> operator/(Complex val,const Tensor<Complex>& A){
     Tensor<Complex>  out=A;
     for (lint n=0;n<A.size();n++){
       out.raw()[n]=val/A.raw()[n];
@@ -538,14 +563,14 @@ namespace tensor{
     return out;
   }
 
-  Tensor<Complex> operator/(const Tensor<Complex>& A,Complex val){
+  const Tensor<Complex> operator/(const Tensor<Complex>& A,Complex val){
     Tensor<Complex>  out=A;
     out/=val;
     return out;
   }
 
   
-  Tensor<Complex> operator/(Real val,const Tensor<Complex>& A){
+  const Tensor<Complex> operator/(Real val,const Tensor<Complex>& A){
     Tensor<Complex>  out(ShapeType(A.shape()));
     for (lint n=0;n<A.size();n++){
       out.raw()[n]=val/A.raw()[n];
@@ -553,19 +578,19 @@ namespace tensor{
     return out;
   }
 
-  Tensor<Complex> operator/(const Tensor<Complex>& A,Real val){
+  const Tensor<Complex> operator/(const Tensor<Complex>& A,Real val){
     Tensor<Complex>  out=A;
     out/=Complex(val,0.0);
     return out;
   }
   
-  Tensor<Complex> operator/(const Tensor<Real>& A,Complex val){
+  const Tensor<Complex> operator/(const Tensor<Real>& A,Complex val){
     Tensor<Complex>  out=A;
     out/=val;
     return out;
   }
   
-  Tensor<Complex> operator/(Complex val,const Tensor<Real>& A){
+  const Tensor<Complex> operator/(Complex val,const Tensor<Real>& A){
     Tensor<Complex> out(ShapeType(A.shape()));
     for (lint n=0;n<A.size();n++){
       out.raw()[n]=val/A.raw()[n];
@@ -576,19 +601,19 @@ namespace tensor{
 
   //rvalyue
 
-  Tensor<Real> operator/(Tensor<Real>&& A,Real val){
+  const Tensor<Real> operator/(Tensor<Real>&& A,Real val){
     Tensor<Real>  out=std::move(A);
     out/=val;
     return out;
   }
 
-  Tensor<Complex> operator/(Tensor<Complex>&& A,Complex val){
+  const Tensor<Complex> operator/(Tensor<Complex>&& A,Complex val){
     Tensor<Complex>  out=std::move(A);
     out/=val;
     return out;
   }
   
-  Tensor<Complex> operator/(Tensor<Complex>&& A,Real val){
+  const Tensor<Complex> operator/(Tensor<Complex>&& A,Real val){
     Tensor<Complex>  out=std::move(A);
     out/=Complex(val,0.0);
     return out;
@@ -596,86 +621,86 @@ namespace tensor{
 
 
   // ++++++++ operator + (scalar) +++++++++++++++++++++++++++++++++++++++
-  Tensor<Real> operator+(Real val,const Tensor<Real>& A){
+  const Tensor<Real> operator+(Real val,const Tensor<Real>& A){
     Tensor<Real>  out=A;
     out+=val;
     return out;
   }
   
-  Tensor<Real> operator+(const Tensor<Real>& A,Real val){
+  const Tensor<Real> operator+(const Tensor<Real>& A,Real val){
     Tensor<Real>  out=A;
     out+=val;
     return out;
   }
 
-  Tensor<Complex> operator+(Complex val,const Tensor<Complex>& A){
+  const Tensor<Complex> operator+(Complex val,const Tensor<Complex>& A){
     Tensor<Complex>  out=A;
     out+=val;
     return out;
   }
 
-  Tensor<Complex> operator+(const Tensor<Complex>& A,Complex val){
+  const Tensor<Complex> operator+(const Tensor<Complex>& A,Complex val){
     Tensor<Complex>  out=A;
     out+=val;
     return out;
   }
 
-  Tensor<Complex> operator+(Real val,const Tensor<Complex>& A){
+  const Tensor<Complex> operator+(Real val,const Tensor<Complex>& A){
     Tensor<Complex>  out=A;
     out+=Complex(val,0.0);
     return out;
   }
 
-  Tensor<Complex> operator+(const Tensor<Complex>& A,Real val){
+  const Tensor<Complex> operator+(const Tensor<Complex>& A,Real val){
     Tensor<Complex>  out=A;
     out+=Complex(val,0.0);
     return out;
   }
 
-  Tensor<Complex> operator+(const Tensor<Real>& A,Complex val){
+  const Tensor<Complex> operator+(const Tensor<Real>& A,Complex val){
     Tensor<Complex>  out=toComplex(A);
     out+=val;
     return out;
   }
   
-  Tensor<Complex> operator+(Complex val,const Tensor<Real>& A){
+  const Tensor<Complex> operator+(Complex val,const Tensor<Real>& A){
     Tensor<Complex>  out=toComplex(A);
     out+=val;
     return out;
   }
 
   //rvalue
-  Tensor<Real> operator+(Real val,Tensor<Real>&& A){
+  const Tensor<Real> operator+(Real val,Tensor<Real>&& A){
     Tensor<Real>  out=std::move(A);
     out+=val;
     return out;
   }
 
-  Tensor<Real> operator+(Tensor<Real>&& A,Real val){
+  const Tensor<Real> operator+(Tensor<Real>&& A,Real val){
     Tensor<Real>  out=std::move(A);
     out+=val;
     return out;
   }
 
-  Tensor<Complex> operator+(Complex val,Tensor<Complex>&& A){
+  const Tensor<Complex> operator+(Complex val,Tensor<Complex>&& A){
     Tensor<Complex>  out=std::move(A);
     out+=val;
     return out;
   }
 
-  Tensor<Complex> operator+(Tensor<Complex>&& A,Complex val){
+  const Tensor<Complex> operator+(Tensor<Complex>&& A,Complex val){
     Tensor<Complex>  out=std::move(A);
     out+=val;
     return out;
   }
   
-  Tensor<Complex> operator+(Real val,Tensor<Complex>&& A){
+  const Tensor<Complex> operator+(Real val,Tensor<Complex>&& A){
     Tensor<Complex>  out=std::move(A);
     out+=Complex(val,0.0);
     return out;
   }
 
-  Tensor<Complex> operator+(Tensor<Complex>&& A,Real val){
+  const Tensor<Complex> operator+(Tensor<Complex>&& A,Real val){
     Tensor<Complex>  out=std::move(A);
     out+=Complex(val,0.0);
     return out;
@@ -684,86 +709,86 @@ namespace tensor{
 
   
   // ++++++++ operator - (scalar) -++++++++++++++++++++++++++++++++++++++  
-  Tensor<Real> operator-(Real val,const Tensor<Real>& A){
+  const Tensor<Real> operator-(Real val,const Tensor<Real>& A){
     Tensor<Real>  out=A;
     out-=val;
     return out;
   }
 
-  Tensor<Real> operator-(const Tensor<Real>& A,Real val){
+  const Tensor<Real> operator-(const Tensor<Real>& A,Real val){
     Tensor<Real>  out=A;
     out-=val;
     return out;
   }
 
-  Tensor<Complex> operator-(Complex val,const Tensor<Complex>& A){
+  const Tensor<Complex> operator-(Complex val,const Tensor<Complex>& A){
     Tensor<Complex>  out=A;
     out-=val;
     return out;
   }
 
-  Tensor<Complex> operator-(const Tensor<Complex>& A,Complex val){
+  const Tensor<Complex> operator-(const Tensor<Complex>& A,Complex val){
     Tensor<Complex>  out=A;
     out-=val;
     return out;
   }
 
-  Tensor<Complex> operator-(Real val,const Tensor<Complex>& A){
+  const Tensor<Complex> operator-(Real val,const Tensor<Complex>& A){
     Tensor<Complex>  out=A;
     out-=Complex(val,0.0);
     return out;
   }
 
-  Tensor<Complex> operator-(const Tensor<Complex>& A,Real val){
+  const Tensor<Complex> operator-(const Tensor<Complex>& A,Real val){
     Tensor<Complex>  out=A;
     out-=Complex(val,0.0);
     return out;
   }
   
-  Tensor<Complex> operator-(const Tensor<Real>& A,Complex val){
+  const Tensor<Complex> operator-(const Tensor<Real>& A,Complex val){
     Tensor<Complex>  out=toComplex(A);
     out-=val;
     return out;
   }
   
-  Tensor<Complex> operator-(Complex val,const Tensor<Real>& A){
+  const Tensor<Complex> operator-(Complex val,const Tensor<Real>& A){
     Tensor<Complex>  out=toComplex(A);
     out-=val;
     return out;
   }
   
 
-  Tensor<Real> operator-(Real val,Tensor<Real>&& A){
+  const Tensor<Real> operator-(Real val,Tensor<Real>&& A){
     Tensor<Real>  out=std::move(A);
     out-=val;
     return out;
   }
 
-  Tensor<Real> operator-(Tensor<Real>&& A,Real val){
+  const Tensor<Real> operator-(Tensor<Real>&& A,Real val){
     Tensor<Real>  out=std::move(A);
     out-=val;
     return out;
   }
 
-  Tensor<Complex> operator-(Complex val,Tensor<Complex>&& A){
+  const Tensor<Complex> operator-(Complex val,Tensor<Complex>&& A){
     Tensor<Complex>  out=std::move(A);
     out-=val;
     return out;
   }
 
-  Tensor<Complex> operator-(Tensor<Complex>&& A,Complex val){
+  const Tensor<Complex> operator-(Tensor<Complex>&& A,Complex val){
     Tensor<Complex>  out=std::move(A);
     out-=val;
     return out;
   }
   
-  Tensor<Complex> operator-(Real val,Tensor<Complex>&& A){
+  const Tensor<Complex> operator-(Real val,Tensor<Complex>&& A){
     Tensor<Complex>  out=std::move(A);
     out-=Complex(val,0.0);
     return out;
   }
 
-  Tensor<Complex> operator-(Tensor<Complex>&& A,Real val){
+  const Tensor<Complex> operator-(Tensor<Complex>&& A,Real val){
     Tensor<Complex>  out=std::move(A);
     out-=Complex(val,0.0);
     return out;
@@ -771,7 +796,7 @@ namespace tensor{
 
 
   template<typename T1,typename T2>
-  auto operator+(const Tensor<T1> &A,const Tensor<T2> &B)->decltype(determineReturnType(A,B)){
+  const auto operator+(const Tensor<T1> &A,const Tensor<T2> &B)->decltype(determineReturnType(A,B)){
     try{
       if((not isComplex(A)) and (not isComplex(B))){
 	Tensor<Real> result=A;
@@ -794,19 +819,22 @@ namespace tensor{
       }
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			      " ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       " sizes of tensors are not matching");      
     }
   }
   
 
   template<typename T1,typename T2>
-  auto operator+(Tensor<T1> &&A,Tensor<T2> &&B)->decltype(determineReturnType(A,B)){
+  const auto operator+(Tensor<T1> &&A,Tensor<T2> &&B)->decltype(determineReturnType(A,B)){
     try{
       if((not isComplex(A)) and (not isComplex(B))){
 	Tensor<Real> result=A;
@@ -829,19 +857,22 @@ namespace tensor{
       }
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			      " ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B)"
+			       ": shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
   
 
   template<typename T1,typename T2>
-  auto operator+(const Tensor<T1> &A,Tensor<T2> &&B)->decltype(determineReturnType(A,B)){
+  const auto operator+(const Tensor<T1> &A,Tensor<T2> &&B)->decltype(determineReturnType(A,B)){
     try{
       if((not isComplex(A)) and (not isComplex(B))){
 	Tensor<Real> result=A;
@@ -864,19 +895,22 @@ namespace tensor{
       }
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
   
 
   template<typename T1,typename T2>
-  auto operator+(Tensor<T1> &&A,const Tensor<T2> &B)->decltype(determineReturnType(A,B)){
+  const auto operator+(Tensor<T1> &&A,const Tensor<T2> &B)->decltype(determineReturnType(A,B)){
     try{
       if((not isComplex(A)) and (not isComplex(B))){
 	Tensor<Real> result=A;
@@ -899,13 +933,16 @@ namespace tensor{
       }
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator+(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
   
@@ -1195,287 +1232,333 @@ namespace tensor{
 
   
   // //=============================================
-
-  Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B){
+  
+  const Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B){
     Tensor<Complex> result=A;
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
-  Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B){
+  const Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B){
     Tensor<Complex> result=A;
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B)"
+			       ": sizes of tensors are not matching");      
     }
   }
 
-  Tensor<Complex> operator-(const Tensor<Real> &A,const Tensor<Complex> &B){
+  const Tensor<Complex> operator-(const Tensor<Real> &A,const Tensor<Complex> &B){
     Tensor<Complex> result=A;
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B)"
+			      ": ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
 
-  Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B){
+  const Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B){
     Tensor<Real> result=A;
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
   
-  //++++++++++++++++++++++++++++++++++++++++++=
-  
-  Tensor<Complex> operator-(Tensor<Complex>&&A,const Tensor<Complex> &B){
+  const Tensor<Complex> operator-(Tensor<Complex>&&A,const Tensor<Complex> &B){
     Tensor<Complex> result=std::move(A);
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
-  Tensor<Complex> operator-(Tensor<Complex> &&A,const Tensor<Real> &B){
+  const Tensor<Complex> operator-(Tensor<Complex> &&A,const Tensor<Real> &B){
     Tensor<Complex> result=std::move(A);
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
-  Tensor<Complex> operator-(Tensor<Real> &&A,const Tensor<Complex> &B){
+  const Tensor<Complex> operator-(Tensor<Real> &&A,const Tensor<Complex> &B){
     Tensor<Complex> result=std::move(A);
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
 
-  Tensor<Real> operator-(Tensor<Real> &&A,const Tensor<Real> &B){
+  const Tensor<Real> operator-(Tensor<Real> &&A,const Tensor<Real> &B){
     Tensor<Real> result=std::move(A);
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
 
-  Tensor<Complex> operator-(const Tensor<Complex>&A,Tensor<Complex> &&B){
+  const Tensor<Complex> operator-(const Tensor<Complex>&A,Tensor<Complex> &&B){
     Tensor<Complex> result=A;
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Complex> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
-  Tensor<Complex> operator-(const Tensor<Complex> &A,Tensor<Real> &&B){
+  const Tensor<Complex> operator-(const Tensor<Complex> &A,Tensor<Real> &&B){
     Tensor<Complex> result=A;
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
-  Tensor<Complex> operator-(const Tensor<Real> &A,Tensor<Complex> &&B){
+  const Tensor<Complex> operator-(const Tensor<Real> &A,Tensor<Complex> &&B){
     Tensor<Complex> result=A;
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Complex> &A,const Tensor<Real> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
 
-  Tensor<Real> operator-(const Tensor<Real> &A,Tensor<Real> &&B){
+  const Tensor<Real> operator-(const Tensor<Real> &A,Tensor<Real> &&B){
     Tensor<Real> result=A;
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Real> operator-(const Tensor<Real> &A,const Tensor<Real> &B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
   
   //---
 
-  Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Complex> &&B){
+  const Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Complex> &&B){
     Tensor<Complex> result=std::move(A);
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Complex> &&B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Complex> &&B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Complex> &&B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Complex> &&B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Complex> &&B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Complex> &&B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
-  Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Real> &&B){
+  const Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Real> &&B){
     Tensor<Complex> result=std::move(A);
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Real> &&B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Real> &&B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Real> &&B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Real> &&B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Real> &&B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Complex> operator-(Tensor<Complex> &&A,Tensor<Real> &&B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
-  Tensor<Complex> operator-(Tensor<Real> &&A,Tensor<Complex> &&B){
+  const Tensor<Complex> operator-(Tensor<Real> &&A,Tensor<Complex> &&B){
     Tensor<Complex> result=std::move(A);
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Real> operator-(Tensor<Complex> &&A,Tensor<Real> &&B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Real> operator-(Tensor<Complex> &&A,Tensor<Real> &&B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(Tensor<Complex> &&A,Tensor<Real> &&B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Real> operator-(Tensor<Complex> &&A,Tensor<Real> &&B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(Tensor<Complex> &&A,Tensor<Real> &&B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Real> operator-(Tensor<Complex> &&A,Tensor<Real> &&B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
 
-  Tensor<Real> operator-(Tensor<Real> &&A,Tensor<Real> &&B){
+  const Tensor<Real> operator-(Tensor<Real> &&A,Tensor<Real> &&B){
     Tensor<Real> result=std::move(A);
     try{
       result-=B;
       return result;      
     }
     catch(RankMismatchError){
-      throw RankMismatchError("Tensor<Real> operator-(Tensor<Real> &&A,Tensor<Real> &&B): ranks of tensors are not matching");
+      throw RankMismatchError("Tensor<Real> operator-(Tensor<Real> &&A,Tensor<Real> &&B):"
+			      "ranks of tensors are not matching");
     }
     catch(ShapeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(Tensor<Real> &&A,Tensor<Real> &&B): shapes of tensors are not matching");
+      throw ShapeMismatchError("Tensor<Real> operator-(Tensor<Real> &&A,Tensor<Real> &&B):"
+			       "shapes of tensors are not matching");
     }
     catch(SizeMismatchError){
-      throw ShapeMismatchError("Tensor<Real> operator-(Tensor<Real> &&A,Tensor<Real> &&B): sizes of tensors are not matching");      
+      throw ShapeMismatchError("Tensor<Real> operator-(Tensor<Real> &&A,Tensor<Real> &&B):"
+			       "sizes of tensors are not matching");      
     }
   }
 
@@ -1493,24 +1576,23 @@ namespace tensor{
   }
   
 
-  // ######################################             implementation of Tensor members form here onward           #####################################################
-
-  
+  // ######   implementation of Tensor members form here onward #########################
+  //default constructor
   template<typename T>
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Tensor<T>::Tensor(){data_.resize(0);size_=0;};
-  /*constructs a tensor of rank dims; data is stored in a std::vector<T>; the data is not initialized
+  
+  /*
+    constructs a tensor with rank dims; data is stored in a std::vector<T>; the data is not initialized
     signature of the constructor: Tensor<T> t(s1,s2,s3,...,sN) constructs a tensor of type T and size (s1,s2,...,sN)
   */
-  //template<typename T,typename... Dimensions>  
   template<typename T>  
   template<typename... Dimensions>
   Tensor<T>::Tensor(const Dimensions&... dims) {
     try{
       check_integral(dims...);
-      vector<int>i={dims...};
+      vector<int> i = {dims...};
       ShapeType s(i.begin(),i.end());
-      shape_=s;
+      shape_ = s;
       init();
     }
     catch(NotAnIntegerError){
@@ -1663,7 +1745,7 @@ namespace tensor{
 
   template<typename T>
   template<typename... Inds>  
-  T Tensor<T>:: operator()(Inds... inds)const{
+  const T& Tensor<T>:: operator()(Inds... inds)const{
     try{
       check_integral(inds...);//check if inds are of intgral type
       IndexType indices={inds...};
@@ -1691,7 +1773,7 @@ namespace tensor{
     
   */
   template<typename T>  
-  template<typename U,typename... Args>
+  template<typename U, typename... Args>
   void Tensor<T>::check_integral(U first,Args... args)const{
     if (not std::is_integral<U>::value)
       throw NotAnIntegerError("check_integral: not an integer");
@@ -1720,19 +1802,22 @@ namespace tensor{
   }
   
   
-  //returns a slice of Tensor<T>, according to the the specified slices; manually runs through the whole tensor and copies it element by element; not very fast
-  //slcs is passed by value because slice might change it, and resuing slcs on another tensor might be screwed up
+  /*
+    returns a slice of Tensor<T>, according to the the specified slices; manually runs through the whole tensor
+    and copies it element by element; not very fast
+    slcs is passed by value because slice might change it, and reusing slcs on another tensor might be screwed up
+  */
   template<typename T>  
-  Tensor<T> Tensor<T>::slice(std::vector<Slice>slcs)const{
-    IndexType index(rank_,0);
-    if (slcs.size()>rank_){
+  Tensor<T> Tensor<T>::slice(std::vector<Slice>slcs) const {
+    IndexType index(rank_, 0);
+    if (slcs.size() > rank_){
       throw std::runtime_error("in Tensor<T>::slice():rank of tensor is smaller than number of provided given slices ");
     }
-    for(lint n=0; n<slcs.size();n++){
-      index[n]=slcs[n].start();
-      if (slcs[n].stop()>=shape_[n]){
-	if (shape_[n]>0){
-	  slcs[n].stop()=shape_[n]-1;
+    for(lint n = 0; n < slcs.size(); n++){
+      index[n] = slcs[n].start();
+      if (slcs[n].stop() >= shape_[n]){
+	if (shape_[n] > 0){
+	  slcs[n].stop() = shape_[n]-1;
 	  slcs[n].reset();
 	}else{
 	  throw SliceError("cannot slice tensor leg of dimension 0)");

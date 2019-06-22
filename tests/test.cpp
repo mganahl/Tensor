@@ -13,16 +13,15 @@
 #include <algorithm>
 #include <tblis.h>
 #include"../lib/utils/utilities.hpp"
-// #include"../lib/array/tensor.hpp"
 #include"../lib/array/tensoroperations.hpp"
+#include"../lib/array/tensor.hpp"
 #include "lib/linalg/tblisroutines.hpp"
 #include "lib/linalg/lapackroutines.hpp"
 #include "lib/linalg/blasroutines.hpp"
 #include "lib/utils/exceptions.hpp"
 #include "lib/array/tensor.hpp"
-
-// #include "../lib/utils/print.hpp"
-//using namespace printfunctions;
+#include "../lib/utils/print.hpp"
+using namespace printfunctions;
 using std::cout;
 using std::conj;
 using std::endl;
@@ -31,89 +30,97 @@ using namespace std;
 using namespace tensor;
 using namespace utilities;
 using std::tuple;
-//using namespace utilities;
-//using namespace tensor;
-// Real addhelper(Real a, Real b){
-//   return a+b;
-// }
-// Complex addhelper(Complex a, Real b){
-//   return a+b;
-// }
 
-// Complex addhelper(Real a, Complex b){
-//   return a+b;
-// }
 
-// Complex addhelper(Complex a,Complex b){
-//   return a+b;
-// }
+template <typename  E >
+class VecExpression {
+public:
+  auto operator[](size_t i) const { return static_cast<E const&>(*this)[i];     }
+  size_t size()             const { return static_cast<E const&>(*this).size(); }
+};
 
-template<typename T>
- class Cl{
- public:
-   Cl():val_(Real(0.0)){}
-   Cl(Real v):val_(v){}  
-   void print(){
-     cout<<val_<<endl;
-   }
- private:
-   Real val_;
- };
-template<typename T>
-void dosomething(std::vector<T>v){
-  cout<<"bla"<<endl;
+template<typename ValueType>
+class Vec : public VecExpression<Vec<ValueType> > {
+  std::vector<ValueType> elems;
+
+public:
+  ValueType operator[](size_t i) const { return elems[i]; }
+  ValueType &operator[](size_t i)      { return elems[i]; }
+  size_t size() const               { return elems.size(); }
+
+  Vec(size_t n) : elems(n) {}
+
+  // construct vector using initializer list
+  Vec(std::initializer_list<ValueType>init){
+    for(auto i:init)
+      elems.push_back(i);
+  }
+
+  // A Vec can be constructed from any VecExpression, forcing its evaluation.
+  template <typename E>
+  Vec(VecExpression<E> const& vec) : elems(vec.size()) {
+    for (size_t i = 0; i != vec.size(); ++i) {
+      elems[i] = vec[i];
+    }
+  }
+};
+
+
+template <typename E1, typename E2>
+class VecSum : public VecExpression<VecSum<E1, E2> > {
+  E1 const& _u;
+  E2 const& _v;
+   
+public:
+  VecSum(E1 const& u, E2 const& v) : _u(u), _v(v) {
+    assert(u.size() == v.size());
+  }
+  
+  auto  operator[](size_t i) const { return _u[i] + _v[i]; }
+  size_t size()               const { return _v.size(); }
+};
+
+template <typename E1, typename E2>
+class VecMultScalar : public VecExpression<VecMultScalar<E1, E2> > {
+  E1 const& _u;
+  E2 _v;
+   
+public:
+  VecMultScalar(E1 const& u, E2 v) : _u(u), _v(v) {}
+  
+  auto  operator[](size_t i) const { return _u[i]*_v; }
+  size_t size()               const { return _u.size(); }
+};
+
+
+template <typename E1, typename E2>
+VecMultScalar<E1,E2>
+operator*(E1 const& u, E2 v) {
+  return VecMultScalar<E1, E2>(u, v);
 }
 
-template<typename T,typename A>
-T* factory(A&& a){
-  return new T(std::forward<A>(a));
-}
-
-template<typename T>
-void fun2(const T&& c){
-  cout<<"hello"<<endl;
-  c=5.0;
-}
-template<typename T>
-void fun(const T&& c){
-  fun2(std::forward<Real>(c));
-  //fun2(c);   
-}
-void fun3(const Real& c){}
-
-template<typename T>
-void funbla(const Cl<T>& c){}
-
-Cl<Real> fun4(){
-  return Cl<Real>();
+template <typename E1, typename E2>
+VecSum<E1,E2>
+operator+(E1 const& u, E2 const& v) {
+  return VecSum<E1, E2>(u, v);
 }
 
 
-std::tuple<int> v2t_1(vector<int>vec){
-  std::make_tuple(vec[0]);
-}
-std::tuple<int,int,int> v2t_2(vector<int>vec){
-  std::make_tuple(vec[0],vec[1]);
-}
-auto v2t_3(vector<int>vec){
-  std::make_tuple(vec[0],vec[1],vec[2]);
-}
-std::tuple<int,int,int,int> v2t_4(vector<int>vec){
-  std::make_tuple(vec[0],vec[1],vec[2],vec[3]);
-}
-
-Complex determineReturnType(Complex&, Complex&);
-Complex determineReturnType(Complex&, Real&);
-Complex determineReturnType(Real&, Complex&);
-Complex determineReturnType(Real&, Real&);  
-
-template<typename T1,typename T2>
-auto add(T1 a, T2 b)->decltype(determineReturnType(a,b)){
-  return "h";
-}
 int main(int argc, char** argv){
-  Real a=1;
-  Complex b=2;
-  auto d=add(a,b);
-  cout<<d<<endl;
+  Vec<Complex> v0 = {Complex(1,1),Complex(2,2)};
+  Vec<double> v1 = {1,2};
+  Vec<Complex> v2 = {Complex(1,1),Complex(2,2)};
+  Real n=4.0;
+  auto sum1=(v1*n+v2)+v0;
+  cout<<sum1.size()<<endl;
+  cout<<sum1[0]<<endl;
+  //auto sum = v0+(v1*4)+v2;
+  //cout<<sum[0]<<" "<<sum[1]<<endl;
+
+
+  // vector<int> v{1,2,3};
+  // const size_type s=v.size();
+  // constexpr size_type  s2=s;
+  // vectorToTuple<s2>(v);
+  // return 0;
 }

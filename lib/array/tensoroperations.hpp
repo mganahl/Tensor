@@ -115,7 +115,6 @@ namespace tensor{
   /*
     returns an identity of dimension "shape": auto eye<T>(d) is a d by d identity of type T
   */
-  
   template<typename T>
   Tensor<T> eye(size_type shape){
     return diag(ones<T>((int)shape));
@@ -123,7 +122,8 @@ namespace tensor{
 
 
   /*
-    returns a random tensor of type T and dimension shape...;  values are initialized with values uniformly [-1,1] or in the unit-square
+    returns a random tensor of type T and dimension shape...;  values are initialized with values uniformly [-1,1] 
+    or in the unit-square
     auto t= random<T>(d1,d2,d...,dn) 
   */
   template<typename T,typename... Shapes>
@@ -131,19 +131,23 @@ namespace tensor{
     return Tensor<T>().random(shape...);
   }
   /*
-    returns a random tensor of type T and dimension shape;  values are initialized with values uniformly in [-1,1] or in the unit-square
-    auto t= random_real(ShapeType{d1,...,dn}) 
+    returns a random tensor of type T and dimension shape;  values are initialized with values uniformly in [-1,1] 
+    or in the unit-square
+    auto t= random<T>(ShapeType{d1,...,dn}) 
   */
   template<typename T>
   Tensor<T> random(const ShapeType& shape){
     return Tensor<T>().random(shape);
   }
-
+  
+  /*
+    sum up all tensor entries
+  */
   template<typename T>
   T sum(const Tensor<T>& A){
     return std::accumulate(A.data().begin(),A.data().end(),T(0.0));
   }
-
+  
   template<typename T>
   T trace(const Tensor<T>& A){
     if (A.rank()!=2){
@@ -160,17 +164,17 @@ namespace tensor{
   */
   template<typename T>
   Tensor<T> diag(const Tensor<T>&tensor){
-    if ((tensor.rank()!=1) and (tensor.rank()!=2)){
+    if ((tensor.rank() != 1) and (tensor.rank() != 2)){
       throw std::runtime_error("in diag: tensor rank is != 1 and !=2");
     }
-    if (tensor.rank()==1){
+    if (tensor.rank() == 1){
       Tensor<T> out(ShapeType{tensor.shape(0),tensor.shape(0)});
       for(uint n=0;n<out.shape(0);n++)
 	out(n,n)=tensor(n);
       return out;      
     }else if(tensor.rank()==2){
       //auto size=min(tensor.shape(0),tensor.shape(1));
-      auto size=(*min_element(tensor.shape().begin(),tensor.shape().end()));
+      auto size=(*std::min_element(tensor.shape().begin(),tensor.shape().end()));
       Tensor<T> out(ShapeType{size});
       out.reset(T(0));
       for (uint n=0;n<size;n++){
@@ -179,7 +183,6 @@ namespace tensor{
       return out;
     } 
   }
-
 
   /*
     calculates eigenvectors and eigenvalues (EV) of a square hermitian real or complex matrix A;
@@ -204,21 +207,21 @@ namespace tensor{
   /*
     calculates eigenvectors  (VR) and eigenvalues (EV) of a square hermitian real or complex matrix A;
     returns a pair containin EV and VR; 
-    
+    call using auto[EV, U]=eigh(tensor)
   */
   template<typename T>
   std::pair<Tensor<Real>,Tensor<T> > eigh(const Tensor<T>&A){
     //do some checks:
-    if (A.rank()!=2)
+    if (A.rank() != 2)
       throw RankMismatchError("eig: rank of tensor !=2!");
-    if (A.shape(0)!=A.shape(1))
+    if (A.shape(0) != A.shape(1))
       throw SizeMismatchError("eig: matrix is not square!");
     
-    Tensor<T>U=A;
-    Tensor<Real>EV(ShapeType{A.shape(0)});
-    //eig destroys the contenst of the first argument! pass a copy to preserve A
-    lapackroutines::eigh(U.raw(),A.shape(0),EV.raw(),'V');
-    return {EV,U};    
+    Tensor<T> U = A;
+    Tensor<Real> EV(ShapeType{A.shape(0)});
+    //eigh destroys the contents of the first argument! pass a copy to preserve A
+    lapackroutines::eigh(U.raw(), A.shape(0), EV.raw(), 'V');
+    return {EV, U};    
   }
 
   /*
@@ -229,30 +232,30 @@ namespace tensor{
   template<typename T>
   std::tuple<Tensor<Complex>,Tensor<Complex>,Tensor<Complex> > eig(Tensor<T>A){
     //do some checks:
-    if (A.rank()!=2)
+    if (A.rank() != 2)
       throw RankMismatchError("eig: rank of tensor !=2!");
-    if (A.shape(0)!=A.shape(1))
+    if (A.shape(0) != A.shape(1))
       throw SizeMismatchError("eig: matrix is not square!");
     
-    Tensor<Complex> VL(A.shape()),EV(ShapeType{A.shape(0)}),VR(A.shape());
+    Tensor<Complex> VL(A.shape()), EV(ShapeType{A.shape(0)}), VR(A.shape());
 
-    lapackroutines::eig(A.raw(),A.shape(0),VL.raw(),EV.raw(),VR.raw(),'V','V');        
-    return {VL,EV,VR};    
+    lapackroutines::eig(A.raw(), A.shape(0), VL.raw(), EV.raw(), VR.raw(), 'V', 'V');        
+    return {VL, EV, VR};    
   }
 
   
   template<typename T>
   std::tuple<Tensor<Complex>,Tensor<Complex>,Tensor<Complex> > eig(Tensor<T>&&A){
     //do some checks:
-    if (A.rank()!=2)
+    if (A.rank() != 2)
       throw RankMismatchError("eig: rank of tensor !=2!");
-    if (A.shape(0)!=A.shape(1))
+    if (A.shape(0) != A.shape(1))
       throw SizeMismatchError("eig: matrix is not square!");
     
-    Tensor<Complex> VL(A.shape()),EV(ShapeType{A.shape(0)}),VR(A.shape());
+    Tensor<Complex> VL(A.shape()), EV(ShapeType{A.shape(0)}), VR(A.shape());
 
-    lapackroutines::eig(A.raw(),A.shape(0),VL.raw(),EV.raw(),VR.raw(),'V','V');        
-    return {VL,EV,VR};    
+    lapackroutines::eig(A.raw(), A.shape(0), VL.raw(), EV.raw(), VR.raw(), 'V', 'V');        
+    return {VL, EV, VR};    
   }
   
   /*
